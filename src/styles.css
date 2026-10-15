@@ -214,3 +214,64 @@ html, body, #root {
   cursor: pointer;
   max-width: calc(100vw - 32px);
 }
+
+/* ---------- Excalidraw trims: no left properties panel, no library ---------- */
+.excalidraw .App-menu__left,
+.excalidraw .default-sidebar-trigger {
+  display: none !important;
+}
+
+/* ---------- Selection properties (top bar) ---------- */
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seg {
+  display: inline-flex;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--island-bg-color, #fff);
+  box-shadow: var(--shadow-island, 0 0 0 1px rgba(0,0,0,.08));
+}
+.seg-item {
+  min-width: 30px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--text-primary-color, #1e1e1e);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg-item:hover { background: rgba(127,127,127,.12); }
+.seg-item.on { background: rgba(105,101,219,.2); color: var(--accent); }
+
+.color-seg input[type="color"] {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(0,0,0,.15);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.color-seg input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.color-seg input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+
+.line-sample {
+  display: block;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.line-sample.dashed {
+  background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px);
+}

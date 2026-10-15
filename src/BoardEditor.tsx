@@ -5,7 +5,6 @@ import {
   FONT_FAMILY,
   MainMenu,
   getSceneVersion,
-  newElementWith,
 } from "@excalidraw/excalidraw";
 import type {
   AppState,
@@ -22,6 +21,7 @@ import {
   saveBoard,
   uploadFile,
 } from "./api";
+import SelectionBar, { toHex } from "./SelectionBar";
 
 type Status = "saved" | "unsaved" | "saving" | "error";
 
@@ -149,55 +149,56 @@ export default function BoardEditor({ board, userId, onOpenBoards, onNewBoard, o
     });
   };
 
-  // Sets the color for new text and recolors any selected text (including text inside shapes)
-  const setTextColor = (color: string) => {
-    const api = apiRef.current;
-    if (!api) return;
-    const { selectedElementIds } = api.getAppState();
-    const elements = api.getSceneElementsIncludingDeleted().map((el) =>
-      el.type === "text" && (selectedElementIds[el.id] || (el.containerId && selectedElementIds[el.containerId]))
-        ? newElementWith(el, { strokeColor: color })
-        : el,
-    );
-    api.updateScene({
-      elements,
+  const setDefaultColor = (color: string) => {
+    apiRef.current?.updateScene({
       appState: { currentItemStrokeColor: color },
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     });
   };
 
-  const renderTopRightUI = (isMobile: boolean, appState: UIAppState) => (
-    <div className="toolbar">
-      <span className={`status status-${status}`} title={statusLabel[status]}>
-        {isMobile ? "" : statusLabel[status]}
-      </span>
-      <label className="color-btn" title="Background color">
-        <span>BG</span>
-        <input
-          type="color"
-          value={toHex(appState.viewBackgroundColor, DEFAULT_BG)}
-          onChange={(e) => setBackground(e.target.value)}
-        />
-      </label>
-      <label className="color-btn" title="Text color (applies to selected text and new text)">
-        <span>A</span>
-        <input
-          type="color"
-          value={toHex(appState.currentItemStrokeColor, DEFAULT_TEXT)}
-          onChange={(e) => setTextColor(e.target.value)}
-        />
-      </label>
-      <button className="tb-btn" onClick={toggleFullscreen} title="Toggle fullscreen">
-        {isFullscreen ? "⤡" : "⛶"}
-      </button>
-      <button className="tb-btn" onClick={onOpenBoards} title="All boards">
-        ☰ {isMobile ? "" : "Boards"}
-      </button>
-      <button className="tb-btn primary" onClick={onNewBoard} title="New board">
-        + {isMobile ? "" : "New"}
-      </button>
-    </div>
-  );
+  const renderTopRightUI = (isMobile: boolean, appState: UIAppState) => {
+    const hasSelection =
+      Boolean(appState.editingTextElement) || Object.values(appState.selectedElementIds).some(Boolean);
+    const compact = isMobile || hasSelection;
+    return (
+      <div className="toolbar">
+        <span className={`status status-${status}`} title={statusLabel[status]}>
+          {compact ? "" : statusLabel[status]}
+        </span>
+        {hasSelection && apiRef.current ? (
+          <SelectionBar api={apiRef.current} appState={appState} />
+        ) : (
+          <>
+            <label className="color-btn" title="Background color">
+              <span>BG</span>
+              <input
+                type="color"
+                value={toHex(appState.viewBackgroundColor, DEFAULT_BG)}
+                onChange={(e) => setBackground(e.target.value)}
+              />
+            </label>
+            <label className="color-btn" title="Color for new text and shapes">
+              <span>A</span>
+              <input
+                type="color"
+                value={toHex(appState.currentItemStrokeColor, DEFAULT_TEXT)}
+                onChange={(e) => setDefaultColor(e.target.value)}
+              />
+            </label>
+            <button className="tb-btn" onClick={toggleFullscreen} title="Toggle fullscreen">
+              {isFullscreen ? "⤡" : "⛶"}
+            </button>
+          </>
+        )}
+        <button className="tb-btn" onClick={onOpenBoards} title="All boards">
+          ☰ {compact ? "" : "Boards"}
+        </button>
+        <button className="tb-btn primary" onClick={onNewBoard} title="New board">
+          + {compact ? "" : "New"}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="editor">
@@ -249,12 +250,4 @@ const statusLabel: Record<Status, string> = {
 function sceneKey(elements: readonly any[], bg?: string, text?: string) {
   const live = elements.filter((el) => !el.isDeleted);
   return `${live.length}|${getSceneVersion(live)}|${bg ?? ""}|${text ?? ""}`;
-}
-
-// <input type="color"> only accepts #rrggbb
-function toHex(color: string | undefined, fallback: string) {
-  if (!color) return fallback;
-  if (/^#[0-9a-f]{6}$/i.test(color)) return color;
-  if (/^#[0-9a-f]{3}$/i.test(color)) return "#" + [...color.slice(1)].map((c) => c + c).join("");
-  return fallback;
 }
